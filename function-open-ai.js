@@ -70,6 +70,13 @@ exports.handler = async function (context, event, callback) {
     const aiJsonResponseString = response.choices[0].message.content;
     const responseObject = JSON.parse(aiJsonResponseString);
 
+    // Añadimos el turno actual al historial que recibimos.
+    history.push({ role: "user", content: userMessage });
+    history.push({ role: "assistant", content: responseObject.respuesta_al_cliente });
+
+    // Añadimos el historial actualizado al objeto que devolvemos a Twilio.
+    responseObject.updated_history = history;
+
     return callback(null, responseObject);
 
   } catch (error) {
