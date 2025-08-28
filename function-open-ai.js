@@ -5,9 +5,7 @@ exports.handler = async function (context, event, callback) {
     apiKey: context.OPENAI_API_KEY,
   });
 
-  // Recibimos el mensaje actual Y el historial de la conversación
   const userMessage = event.user_message || 'No se recibió mensaje.';
-  // El historial se espera como un array de objetos: [{role: 'user', content: '...'}, {role: 'assistant', content: '...'}]
   const history = event.chat_history || [];
 
   const systemPrompt = `
@@ -51,30 +49,23 @@ exports.handler = async function (context, event, callback) {
     3. Nunca inventes un código de servicio. Si el cliente pregunta por algo que no está en la lista, usa el código NO_SERVICE_IDENTIFIED.
   `;
 
-  // Siempre empezamos con las instrucciones del sistema.
   let messages = [{ role: "system", content: systemPrompt }];
 
-  // Añadimos los mensajes anteriores de la conversación.
   messages = messages.concat(history);
-
-  // Añadimos el mensaje más reciente del usuario.
-  messages.push({ role: "user", content: userMessage });
 
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: messages, // Usamos el array completo de mensajes
+      messages: messages, 
       response_format: { type: "json_object" }
     });
 
     const aiJsonResponseString = response.choices[0].message.content;
     const responseObject = JSON.parse(aiJsonResponseString);
 
-    // Añadimos el turno actual al historial que recibimos.
     history.push({ role: "user", content: userMessage });
     history.push({ role: "assistant", content: responseObject.respuesta_al_cliente });
 
-    // Añadimos el historial actualizado al objeto que devolvemos a Twilio.
     responseObject.updated_history = history;
 
     return callback(null, responseObject);
