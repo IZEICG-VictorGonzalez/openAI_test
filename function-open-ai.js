@@ -1,6 +1,6 @@
 const OpenAI = require('openai');
 
-exports.handler = async function(context, event, callback) {
+exports.handler = async function (context, event, callback) {
   const openai = new OpenAI({
     apiKey: context.OPENAI_API_KEY,
   });
@@ -10,7 +10,6 @@ exports.handler = async function(context, event, callback) {
   // El historial se espera como un array de objetos: [{role: 'user', content: '...'}, {role: 'assistant', content: '...'}]
   const history = event.chat_history || [];
 
-  // Este es el "cerebro" de tu asistente. Las instrucciones son cruciales.
   const systemPrompt = `
     Eres un asistente virtual experto en los servicios de una consultora de recursos humanos. Tu único objetivo es identificar cuál de los siguientes servicios necesita el cliente basándote en su conversación.
 
@@ -52,19 +51,18 @@ exports.handler = async function(context, event, callback) {
     3. Nunca inventes un código de servicio. Si el cliente pregunta por algo que no está en la lista, usa el código NO_SERVICE_IDENTIFIED.
   `;
 
-  // 🚀 MEJORA CLAVE: Construimos el array de mensajes dinámicamente
-  // 1. Siempre empezamos con las instrucciones del sistema.
+  // Siempre empezamos con las instrucciones del sistema.
   let messages = [{ role: "system", content: systemPrompt }];
 
-  // 2. Añadimos los mensajes anteriores de la conversación.
+  // Añadimos los mensajes anteriores de la conversación.
   messages = messages.concat(history);
 
-  // 3. Añadimos el mensaje más reciente del usuario.
+  // Añadimos el mensaje más reciente del usuario.
   messages.push({ role: "user", content: userMessage });
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4-turbo-preview",
+      model: "gpt-4o-mini",
       messages: messages, // Usamos el array completo de mensajes
       response_format: { type: "json_object" }
     });
@@ -72,8 +70,6 @@ exports.handler = async function(context, event, callback) {
     const aiJsonResponseString = response.choices[0].message.content;
     const responseObject = JSON.parse(aiJsonResponseString);
 
-    // Para devolver a Twilio, podrías querer añadir el nuevo historial
-    // aunque es mejor manejarlo en el propio flujo.
     return callback(null, responseObject);
 
   } catch (error) {
